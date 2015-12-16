@@ -127,18 +127,26 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 	if (!$path) {
 		return false;
 	}
+	if (!is_readable($path)) {
+		_log('deploy target dir is not readable: '.$path);
+		return false;
+	}
 	$path = rtrim($path, '/').'/'.$ref.'/';
 	if (!file_exists($path)) {
 		mkdir($path, 0755, true);
+		if (!file_exists($path)) {
+			_log('cannot create deploy target dir: '.$path);
+			return false;
+		}
 	}
 	$cmd = [];
-	$cmd[] = 'cd '.$path;
 	if (!file_exists($path.'.git') || !file_exists($path.'.git/config')) {
 		if (!$clone_url) {
 			return false;
 		}
 		$cmd[] = 'git clone --recursive '.$clone_url.' '.$path;
 	}
+	$cmd[] = 'cd '.$path;
 	$cmd[] = 'git reset --hard HEAD';
 	$cmd[] = 'git pull origin';
 	$cmd[] = 'git checkout '.$ref;

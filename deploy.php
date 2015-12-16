@@ -13,6 +13,11 @@ $path = rtrim($app_conf['path'], '/').'/';
 
 # Github API v3
 # https://developer.github.com/v3/activity/events/types/#pushevent
+#
+# you should put deploy keys inside /var/www/.ssh/id_rsa
+# also verify if user www-data has access to private repo:
+# sudo -u www-data ssh -T git@github.com
+#
 $event = strtolower($_SERVER['HTTP_X_GITHUB_EVENT']);
 if (in_array($event, array('create', 'push'))) {
 	$output = deploy_git($payload['ref'], $path, $payload['repository']['clone_url'], $app_conf);
