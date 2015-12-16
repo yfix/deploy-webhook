@@ -152,7 +152,7 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 			_log('empty clone url: '.$clone_url);
 			return false;
 		}
-		$cmd[] = 'git clone --depth 10 --recursive '.$clone_url.' '.$path;
+		$cmd[] = 'git clone --recursive '.$clone_url.' '.$path;
 	}
 	$cmd[] = 'cd '.$path;
 	$cmd[] = 'git reset --hard HEAD'; //  'origin/'.$ref;
