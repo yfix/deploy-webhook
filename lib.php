@@ -126,10 +126,12 @@ function copy_dir($from, $to) {
 /***/
 function deploy_git($ref, $path, $clone_url, $app_conf) {
 	$ref = basename($ref) ?: 'master';
-	if (!preg_match('~^[a-z0-9\.-]+$~ims', $ref)) {
+	if (!preg_match('~^[a-z0-9\._-]+$~ims', $ref)) {
+		_log('wrong ref: '.$ref);
 		return false;
 	}
 	if (!$path) {
+		_log('empty path: '.$path);
 		return false;
 	}
 	if (!is_readable($path)) {
@@ -147,20 +149,21 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 	$cmd = [];
 	if (!file_exists($path.'.git') || !file_exists($path.'.git/config')) {
 		if (!$clone_url) {
+			_log('empty clone url: '.$clone_url);
 			return false;
 		}
-		$cmd[] = 'git clone --recursive '.$clone_url.' '.$path;
+		$cmd[] = 'git clone --depth 10 --recursive '.$clone_url.' '.$path;
 	}
 	$cmd[] = 'cd '.$path;
-	$cmd[] = 'git reset --hard HEAD';
+	$cmd[] = 'git reset --hard HEAD'; //  'origin/'.$ref;
 	$cmd[] = 'git pull origin';
 	$cmd[] = 'git checkout '.$ref;
-	$cmd[] = 'git submodule init && git submodule update && git submodule foreach --recursive "git submodule init && git submodule update"';
+	$cmd[] = '(git submodule init && git submodule update && git submodule foreach --recursive "git submodule init && git submodule update" ; true)';
 	$cmd[] = 'chown -R www-data:www-data .';
 	_log(implode(' && '.PHP_EOL, $cmd));
 
 	$output = array();
-	exec(implode(' && ', $cmd), $output, $exec_status);
+	exec('('.implode(' && ', $cmd).') 2>&1', $output, $exec_status);
 	_log(implode(PHP_EOL, $output));
 
 	if ($output && $exec_status === 0 && $app_conf['name']) {
