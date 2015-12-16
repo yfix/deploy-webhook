@@ -48,8 +48,11 @@ function _log($msg = '', $log_path = '') {
 	file_put_contents($log_path, '['.date('Y-m-d H:i:s').'] '. $msg. PHP_EOL, FILE_APPEND);
 }
 /***/
-function get_payload() {
+function get_payload($raw = false) {
 	$input = file_get_contents('php://input');
+	if ($raw) {
+		return $input;
+	}
 	$payload = $_SERVER['CONTENT_TYPE'] === 'application/json' ? json_decode($input, true) : $_POST['payload'];
 	_log($payload);
 	return $payload;
@@ -59,7 +62,7 @@ function get_webhook_id() {
 	return strtolower(substr(ltrim($_SERVER['REQUEST_URI'], '/'), 0, 32));
 }
 /***/
-function validate_payload($payload, $headers, $secret) {
+function validate_payload($raw_payload, $headers, $secret) {
 	if (empty($secret)) {
 		return true;
 	}
@@ -68,15 +71,16 @@ function validate_payload($payload, $headers, $secret) {
 		return false;
 	}
 	list($algo, $hash) = explode('=', $signature, 2);
-	$payload_hash = hash_hmac($algo, $payload, $secret);
+	$payload_hash = hash_hmac($algo, $raw_payload, $secret);
 	if ($hash !== $payload_hash) {
 		return false;
 	}
 	return true;
 }
 /***/
-function get_app_conf($payload, $config = []) {
-	if (!$payload) {
+function get_app_conf($config) {
+	$raw_payload = get_payload($raw = true);
+	if (!$raw_payload) {
 		return false;
 	}
 	$webhook_id = get_webhook_id();
@@ -84,9 +88,10 @@ function get_app_conf($payload, $config = []) {
 		_log('404: wrong webhook');
 		return false;
 	}
+	$headers = getallheaders();
 	$webhook_conf = $config['webhooks'][$webhook_id];
 	$secret = $webhook_conf['secret'];
-	if (!isset($webhook_conf['secret']) || !validate_payload($input, $headers, $secret)) {
+	if (!isset($webhook_conf['secret']) || !validate_payload($raw_payload, $headers, $secret)) {
 		_log('403: secret not valid');
 		return false;
 	}
@@ -122,7 +127,7 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 	if (!$path) {
 		return false;
 	}
-	$path = rtrim($path, '/').'/'.$ref;
+	$path = rtrim($path, '/').'/'.$ref.'/';
 	if (!file_exists($path)) {
 		mkdir($path, 0755, true);
 	}
