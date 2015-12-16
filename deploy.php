@@ -20,7 +20,8 @@ $path = rtrim($app_conf['path'], '/').'/';
 #
 $event = strtolower($_SERVER['HTTP_X_GITHUB_EVENT']);
 if (in_array($event, array('create', 'push'))) {
-	$output = deploy_git($payload['ref'], $path, $payload['repository']['clone_url'], $app_conf);
+	$clone_url = $payload['repository'][$app_conf['is_private'] ? 'ssh_url' : 'clone_url'];
+	$output = deploy_git($payload['ref'], $path, $clone_url, $app_conf);
 	echo strtoupper($event).' '.$app_conf['name'].' '.basename($payload['ref']).' OK';
 } elseif ($event == 'ping') {
 	echo 'PONG';

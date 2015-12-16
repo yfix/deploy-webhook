@@ -110,10 +110,13 @@ function copy_dir($from, $to) {
 		mkdir($to, 0755, true);
 	}
 	foreach ($iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($from, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST) as $item) {
-		if ($item->isDir()) {
-			mkdir($to. DIRECTORY_SEPARATOR. $iterator->getSubPathName());
+		$to_path = rtrim($to, '/'). '/'. $iterator->getSubPathName();
+		if (is_link($item) && file_exists($to_path)) {
+			exec('rm -rfd "'.$to_path.'" && cp --no-dereference --preserve=links '.$item.' '.$to_path);
+		} elseif ($item->isDir()) {
+			mkdir($to_path);
 		} else {
-			copy($item, $to. DIRECTORY_SEPARATOR. $iterator->getSubPathName());
+			copy($item, $to_path);
 		}
 	}
 	return true;
