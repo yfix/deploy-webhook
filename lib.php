@@ -31,6 +31,10 @@ function _403() {
 	header(($_SERVER['SERVER_PROTOCOL'] ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.1').' 403 Forbidden');
 }
 /***/
+function _503() {
+	header(($_SERVER['SERVER_PROTOCOL'] ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.1').' 503 Service Temporarily Unavailable');
+}
+/***/
 function _log($msg = '', $log_path = '') {
 	if (!$msg) {
 		return false;
@@ -153,8 +157,8 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 	$cmd = [];
 	// http://superuser.com/questions/232373/how-to-tell-git-which-private-key-to-use
 	$ssh_key = __DIR__.'/ssh_keys/'.$app_conf['name'].'.pem';
-	if (file_exists($ssh_key) && is_readable($ssh_key) && file_get_contents($ssh_key) >= 512) {
-		$cmd[] = 'export GIT_SSH_COMMAND="ssh -i '.$ssh_key.' -F /dev/null"';
+	if (file_exists($ssh_key) && is_readable($ssh_key) && strlen(file_get_contents($ssh_key)) >= 512) {
+		$cmd[] = 'export GIT_SSH_COMMAND="ssh -i '.$ssh_key.' -F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"';
 	}
 	if (!file_exists($path.'.git') || !file_exists($path.'.git/config')) {
 		if (!$clone_url) {
@@ -176,6 +180,8 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 	_log(implode(PHP_EOL, $output));
 
 	if (!$output || $exec_status !== 0) {
+		print_r($cmd);
+		print_r($output);
 		_log('Error: exec exit status not 0');
 		return false;
 	}
