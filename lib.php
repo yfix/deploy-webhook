@@ -138,6 +138,10 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 		_log('deploy target dir is not readable: '.$path);
 		return false;
 	}
+	if (!$app_conf['name']) {
+		_log('empty app name: '.$app_conf['name']);
+		return false;
+	}
 	$path = rtrim($path, '/').'/'.$ref.'/';
 	if (!file_exists($path)) {
 		mkdir($path, 0755, true);
@@ -147,6 +151,11 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 		}
 	}
 	$cmd = [];
+	// http://superuser.com/questions/232373/how-to-tell-git-which-private-key-to-use
+	$ssh_key = __DIR__.'/ssh_keys/'.$app_conf['name'].'.pem';
+	if (file_exists($ssh_key) && is_readable($ssh_key) && file_get_contents($ssh_key) >= 512) {
+		$cmd[] = 'export GIT_SSH_COMMAND="ssh -i '.$ssh_key.' -F /dev/null"'
+	}
 	if (!file_exists($path.'.git') || !file_exists($path.'.git/config')) {
 		if (!$clone_url) {
 			_log('empty clone url: '.$clone_url);
@@ -166,13 +175,21 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 	exec('('.implode(' && ', $cmd).') 2>&1', $output, $exec_status);
 	_log(implode(PHP_EOL, $output));
 
-	if ($output && $exec_status === 0 && $app_conf['name']) {
+	if (!$output || $exec_status !== 0) {
+		_log('Error: exec exit status not 0');
+		return false;
+	}
+
+	// Override some files after event processing (configs, links, etc)
+	// Ability to override skel for specific branch
+	$skel_dir = __DIR__.'/skels/'.$app_conf['name'].'|'.$ref;
+	if (!file_exists($skel_dir)) {
 		$skel_dir = __DIR__.'/skels/'.$app_conf['name'];
-		if (file_exists($skel_dir)) {
-			copy_dir($skel_dir, $path);
-			exec('chown -R www-data:www-data '.$path);
-			_log('skel dir contents: '.$skel_dir.' copied to: '.$path);
-		}
+	}
+	if (file_exists($skel_dir)) {
+		copy_dir($skel_dir, $path);
+		exec('chown -R www-data:www-data '.$path);
+		_log('skel dir contents: '.$skel_dir.' copied to: '.$path);
 	}
 
 	_log('deployed: '.$ref, __DIR__.'/log/'.$app_conf['name'].'.log');
