@@ -1,5 +1,6 @@
 <?php
 
+$ts = microtime(true);
 $config = require __DIR__.'/config.php';
 require_once __DIR__.'/lib.php';
 
@@ -29,3 +30,4 @@ if (in_array($event, array('create', 'push'))) {
 } else {
 	echo 'EVENT NOT SUPPORTED';
 }
+echo PHP_EOL. 'deployed in: '.round(microtime(true) - $ts, 3).' seconds';
