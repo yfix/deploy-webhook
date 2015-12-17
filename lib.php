@@ -154,7 +154,7 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 	// http://superuser.com/questions/232373/how-to-tell-git-which-private-key-to-use
 	$ssh_key = __DIR__.'/ssh_keys/'.$app_conf['name'].'.pem';
 	if (file_exists($ssh_key) && is_readable($ssh_key) && file_get_contents($ssh_key) >= 512) {
-		$cmd[] = 'export GIT_SSH_COMMAND="ssh -i '.$ssh_key.' -F /dev/null"'
+		$cmd[] = 'export GIT_SSH_COMMAND="ssh -i '.$ssh_key.' -F /dev/null"';
 	}
 	if (!file_exists($path.'.git') || !file_exists($path.'.git/config')) {
 		if (!$clone_url) {
