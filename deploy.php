@@ -4,6 +4,13 @@ $ts = microtime(true);
 $config = require __DIR__.'/config.php';
 require_once __DIR__.'/lib.php';
 
+$access_log = date('Y-m-d H:i:s'). PHP_EOL
+	. 'GET: '.print_r($_GET, 1). PHP_EOL
+	. 'POST: '.print_r($_POST, 1). PHP_EOL
+	. 'SERVER: '.print_r($_SERVER, 1). PHP_EOL
+;
+_log($access_log, __DIR__.'/log/access.log');
+
 $payload = get_payload();
 !$payload && exit(_404());
 
