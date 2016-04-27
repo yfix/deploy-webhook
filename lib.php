@@ -66,7 +66,53 @@ function get_webhook_id() {
 	return strtolower(substr(ltrim($_SERVER['REQUEST_URI'], '/'), 0, 32));
 }
 /***/
-function validate_payload($raw_payload, $headers, $secret) {
+function get_git_provider() {
+	$lower_ua = strtolower($_SERVER['HTTP_USER_AGENT']);
+	// Example: GitHub-Hookshot/cd33156
+	if (false !== strpos($lower_ua, 'github')) {
+		return 'github';
+	// Example: Bitbucket-Webhooks/2.0
+	} elseif (false !== strpos($lower_ua, 'bitbucket')) {
+		return 'bitbucket';
+	}
+	return false;
+}
+/***/
+function get_app_conf($config) {
+	$provider = get_git_provider();
+	if ($provider === 'github') {
+		return github_get_app_conf($config);
+	} elseif ($provider === 'bitbucket') {
+		return bitbucket_get_app_conf($config);
+	}
+	return false;
+}
+/***/
+function github_get_app_conf($config) {
+	$raw_payload = get_payload($raw = true);
+	if (!$raw_payload) {
+		return false;
+	}
+	$webhook_id = get_webhook_id();
+	if (!preg_match('~^[a-z0-9]{32}$~ims', $webhook_id) || !isset($config['webhooks'][$webhook_id])) {
+		_log('404: wrong webhook');
+		return false;
+	}
+	$headers = getallheaders();
+	$webhook_conf = $config['webhooks'][$webhook_id];
+	$secret = $webhook_conf['secret'];
+	if (!isset($webhook_conf['secret']) || !github_validate_payload($raw_payload, $headers, $secret)) {
+		_log('403: secret not valid');
+		return false;
+	}
+	if (!isset($webhook_conf['app']) || !isset($config['apps'][$webhook_conf['app']])) {
+		_log('404: no such app');
+		return false;
+	}
+	return $config['apps'][$webhook_conf['app']] + array('name' => $webhook_conf['app']);
+}
+/***/
+function github_validate_payload($raw_payload, $headers, $secret) {
 	if (empty($secret)) {
 		return true;
 	}
@@ -82,7 +128,7 @@ function validate_payload($raw_payload, $headers, $secret) {
 	return true;
 }
 /***/
-function get_app_conf($config) {
+function bitbucket_get_app_conf($config) {
 	$raw_payload = get_payload($raw = true);
 	if (!$raw_payload) {
 		return false;
@@ -95,7 +141,7 @@ function get_app_conf($config) {
 	$headers = getallheaders();
 	$webhook_conf = $config['webhooks'][$webhook_id];
 	$secret = $webhook_conf['secret'];
-	if (!isset($webhook_conf['secret']) || !validate_payload($raw_payload, $headers, $secret)) {
+	if (!bitbucket_validate_payload($raw_payload, $headers, $secret)) {
 		_log('403: secret not valid');
 		return false;
 	}
@@ -104,6 +150,20 @@ function get_app_conf($config) {
 		return false;
 	}
 	return $config['apps'][$webhook_conf['app']] + array('name' => $webhook_conf['app']);
+}
+/***/
+function bitbucket_validate_payload($raw_payload, $headers, $secret) {
+
+// TODO: check bitbucket incoming IPs as validation
+//
+// https://confluence.atlassian.com/bitbucket/manage-webhooks-735643732.html
+//
+// If you want your server to check that the payloads it receives are from Bitbucket, whitelist these IP ranges:
+// 131.103.20.160/27
+// 165.254.145.0/26
+// 104.192.143.0/24
+
+	return true;
 }
 /***/
 function copy_dir($from, $to) {
