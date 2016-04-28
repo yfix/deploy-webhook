@@ -60,4 +60,16 @@ if ($provider === 'github') {
 		echo 'EVENT NOT SUPPORTED';
 	}
 }
-echo PHP_EOL. 'deployed in: '.round(microtime(true) - $ts, 3).' seconds';
+
+$msg = implode(PHP_EOL, [
+	'['.date('Y-m-d H:i:s').']',
+	'deployed in: '.round(microtime(true) - $ts, 3).' seconds',
+	'provider: '.$provider,
+	'event: '.$event,
+	'branch: '.$ref,
+	'clone_url: '.$clone_url,
+	'path: '.$path,
+]);
+
+echo PHP_EOL. $msg;
+send_to_slack($app_conf, $msg, '#github');
