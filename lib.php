@@ -275,7 +275,7 @@ function send_to_slack($app_conf, $message, $channel = '', $icon = '') {
             'icon_emoji'=> $icon,
         ]),
     ]);
-    $ch = curl_init();
+    $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

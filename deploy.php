@@ -36,6 +36,7 @@ if ($provider === 'github') {
 	if (in_array($event, array('create', 'push'))) {
 		$clone_url = $payload['repository'][$app_conf['is_private'] ? 'ssh_url' : 'clone_url'];
 		$ref = $payload['ref'];
+		$git_hash = $payload['head_commit']['id'];
 		if ($clone_url && $ref) {
 			$ok = deploy_git($ref, $path, $clone_url, $app_conf);
 		}
@@ -51,6 +52,7 @@ if ($provider === 'github') {
 	if (in_array($event, array('repo:push'))) {
 		$clone_url = 'git@bitbucket.org:'.$payload['repository']['full_name'].'.git';
 		$ref = $payload['push']['changes'][0]['new']['name'];
+		$git_hash = $payload['push']['changes'][0]['new']['target']['hash'];
 		if ($clone_url && $ref) {
 			$ok = deploy_git($ref, $path, $clone_url, $app_conf);
 		}
@@ -66,7 +68,8 @@ $msg = implode(PHP_EOL, [
 	'deployed in: '.round(microtime(true) - $ts, 3).' seconds',
 	'provider: '.$provider,
 	'event: '.$event,
-	'branch: '.$ref,
+	'branch: '.basename($ref),
+	'hash: '.$git_hash,
 	'clone_url: '.$clone_url,
 	'path: '.$path,
 ]);
