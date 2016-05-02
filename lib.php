@@ -228,10 +228,10 @@ function deploy_git($ref, $path, $clone_url, $app_conf) {
 		$cmd[] = 'git clone --recursive '.$clone_url.' '.$path;
 	}
 	$cmd[] = 'cd '.$path;
-	$cmd[] = 'git reset --hard HEAD'; //  'origin/'.$ref;
-	$cmd[] = 'git pull origin';
 	$cmd[] = 'git checkout '.$ref;
-	$cmd[] = '(git submodule init && git submodule update && git submodule foreach --recursive "git submodule init && git submodule update" ; true)';
+	$cmd[] = 'git pull -r';
+	$cmd[] = 'git reset --hard origin/'.$ref;
+	$cmd[] = '(git submodule sync; git submodule update --init --recursive; true)';
 	$cmd[] = 'chown -R www-data:www-data .';
 	_log(implode(' && '.PHP_EOL, $cmd));
 
