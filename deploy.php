@@ -72,6 +72,7 @@ $msg = implode(PHP_EOL, [
 	'hash: '.$git_hash,
 	'clone_url: '.$clone_url,
 	'path: '.$path,
+	'host: '.$_SERVER['HTTP_HOST'],
 ]);
 
 echo PHP_EOL. $msg;
